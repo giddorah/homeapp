@@ -1,0 +1,23 @@
+﻿@inherits LayoutComponentBase
+
+@*<div class="sidebar">
+    <NavMenu />
+</div>*@
+
+    <div class="ui fluid container main">
+        <div class="ui fluid three item inverted menu">
+            <a class="active item" href="" Match="NavLinkMatch.All">
+                Home
+            </a>
+            <a class="item" href="counter">
+                Messages
+            </a>
+            <a class="item" href="fetchdata">
+                Today
+            </a>
+        </div>
+
+        <div class="ui container">
+            @Body
+        </div>
+    </div>

@@ -1,0 +1,281 @@
+﻿@page "/fetchdata"
+@using homeapp2.Shared
+@using System.Net.Http
+
+@inject HttpClient Http
+<style>
+    .first {
+        border-top: 1px solid black !important;
+    }
+</style>
+<div class="ui six stackable cards">
+    @foreach (var forecast in formattedResponses)
+    {
+        <div class="ui fluid raised link card">
+            <div class="center aligned content">
+                <div class="enter aligned header">@forecast.Date.ToString("HH:mm")</div>
+
+                <h4 class="ui sub header"></h4>
+                <div>
+                    <i class="@forecast.Icon" style="font-size:75px;vertical-align:central;text-align:center;display: inline-block;width: 100%;"></i>
+
+                </div>
+
+                <div class="ui small feed">
+                    <div class="event">
+                        <div class="content">
+                            <div class="center aligned summary">
+                                <i class="wi wi-thermometer"></i> @forecast.Temperature.ToString()
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event">
+                        <div class="content">
+                            <div class="center aligned summary">
+                                <i class="wi wi-day-cloudy"></i> @forecast.WeatherType.ToString()
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event">
+                        <div class="content">
+                            <div class="center aligned summary">
+                                <i class="wi wi-strong-wind"></i> @forecast.WindSpeeds.ToString()
+                            </div>
+                        </div>
+                    </div>
+                    <div class="event">
+                        <div class="content">
+                            <div class="center aligned summary">
+                                <i class="wi wi-lightning"></i> @forecast.ThunderProbability.ToString()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<table class="ui celled table">
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Destination</th>
+            <th>Arrival Time</th>
+            <th>Line</th>
+            <th>Duration</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        @foreach (var leg in formattedTrips)
+        {
+            int amountOfLegs = leg.Trips.Count();
+            bool added = false;
+            string firstString = "first";
+            @foreach (var trip in leg.Trips)
+            {
+                <tr>
+                    <td data-label="Time" class="@firstString">@trip.Time</td>
+                    <td data-label="Destination" class="@firstString">@trip.Destination</td>
+                    <td data-label="Arrival Time" class="@firstString">@trip.ArrivalTime</td>
+                    <td data-label="Line" class="@firstString"><i class="@trip.Icon"></i> @trip.Line</td>
+                    @if (!added)
+                    {
+                        <td data-label="Duration" class="@firstString" rowspan="@amountOfLegs" style="vertical-align:middle;text-align:center">@leg.Duration</td>
+                        added = true;
+                    }
+                </tr>
+                firstString = "";
+            }
+            @*<td rowspan="@count">@leg.Duration</td>*@
+
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<FormattedWeather> formattedResponses = new List<FormattedWeather>();
+    private List<FormattedLeg> formattedTrips = new List<FormattedLeg>();
+
+    private string[] weatherIconsDay =
+    {
+        "wi-day-sunny",
+        "wi-day-sunny-overcast",
+        "wi-day-cloudy-high",
+        "wi-day-cloudy",
+        "wi-day-sunny-overcast",
+        "wi-cloudy",
+        "wi-day-fog",
+        "wi-day-showers",
+        "wi-day-sprinkle",
+        "wi-day-sprinkle",
+        "wi-day-thunderstorm",
+        "wi-day-sleet",
+        "wi-day-sleet",
+        "wi-day-sleet",
+        "wi-day-snow",
+        "wi-day-snow",
+        "wi-day-snow",
+        "wi-day-rain",
+        "wi-day-rain",
+        "wi-day-rain",
+        "wi-day-thunderstorm",
+        "wi-day-sleet",
+        "wi-day-sleet",
+        "wi-day-sleet",
+        "wi-day-snow",
+        "wi-day-snow",
+        "wi-day-snow"
+    };
+
+    private string[] weatherIconsNight =
+{
+        "wi-night-clear",
+        "wi-night-partly-cloudy",
+        "wi-night-alt-partly-cloudy",
+        "wi-night-alt-cloudy",
+        "wi-night-cloudy",
+        "wi-day-sunny-overcast",
+        "wi-night-fog",
+        "wi-night-showers",
+        "wi-night-showers",
+        "wi-night-showers",
+        "wi-night-thunderstorm",
+        "wi-night-sleet",
+        "wi-night-sleet",
+        "wi-night-sleet",
+        "wi-night-alt-snow",
+        "wi-night-alt-snow",
+        "wi-night-alt-snow",
+        "wi-night-rain",
+        "wi-night-rain",
+        "wi-night-rain",
+        "wi-night-thunderstorm",
+        "wi-night-sleet",
+        "wi-night-sleet",
+        "wi-night-sleet",
+        "wi-night-alt-snow",
+        "wi-night-alt-snow",
+        "wi-night-alt-snow"
+    };
+
+    private string[] weatherTypes = {
+        "Clear Sky",
+        "Nearly Clear Sky",
+        "Variable cloudiness",
+        "Halfclear sky",
+        "Cloudy sky",
+        "Overcast",
+        "Fog",
+        "Light rain showers",
+        "Moderate rain showers",
+        "Heavy rain showers",
+        "Thunderstorm",
+        "Light sleet showers",
+        "Moderate sleet showers",
+        "Heavy sleet showers",
+        "Light snow showers",
+        "Moderate snow showers",
+        "Heavy snow showers",
+        "Light rain",
+        "Moderate rain",
+        "Heavy rain",
+        "Thunder",
+        "Light sleet",
+        "Moderate sleet",
+        "Heavy sleet",
+        "Light snowfall",
+        "Moderate snowfall",
+        "Heavy snowfall",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var forecasts = new SmhiResponse();
+        var endpoint = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/17.695700/lat/59.336510/data.json";
+        forecasts = await Http.GetJsonAsync<SmhiResponse>(endpoint);
+
+        DateTime today = DateTime.Now;
+        String searchDate = "";
+        if (today.Hour > 07)
+        {
+            searchDate = today.AddDays(1.0).ToString("yyyy-MM-dd");
+        }
+        else
+        {
+            searchDate = today.ToString("yyyy-MM-dd");
+        }
+        
+
+        foreach (var time in forecasts.timeSeries.Where(d => d.validTime.Hour % 2 != 0).Take(6))
+        {
+            var workResponse = new FormattedWeather();
+            workResponse.Date = DateTime.Parse(time.validTime.ToString());
+
+            int weatherTypeInt = Convert.ToInt32(time.parameters.SingleOrDefault(p => p.name == "Wsymb2").values[0]) - 1;
+
+            workResponse.Temperature = time.parameters.SingleOrDefault(p => p.name == "t").values[0] + " °C";
+            workResponse.ThunderProbability = time.parameters.SingleOrDefault(p => p.name == "tstm").values[0] + "%";
+            workResponse.WeatherType = weatherTypes[weatherTypeInt];
+            workResponse.WindSpeeds = time.parameters.SingleOrDefault(p => p.name == "gust").values[0] + " m/s";
+
+            if (workResponse.Date.Hour <= 7)
+            {
+                workResponse.Icon = "wi " + weatherIconsNight[weatherTypeInt];
+            }
+            else
+            {
+                workResponse.Icon = "wi " + weatherIconsDay[weatherTypeInt];
+            }
+
+            formattedResponses.Add(workResponse);
+        }
+
+        var commute = new CommuteResponse();
+
+        
+
+        Console.WriteLine(searchDate);
+
+        //var endpointSL = "https://api.sl.se/api2/TravelplannerV3_1/trip.json?key=e202dc8408124b46b1d28e87f8a93ce5&lang=se&date=" + DateTime.Now.Year + "-0" + DateTime.Now.Month + "-0" + DateTime.Now.Day + "&time=08:00&searchForArrival=1&originExtId=Stenhamra%20(Solbacka)%20(Ekerö)&destExtId=Odenplan%20(Stockholm)";
+        var endpointSL = "https://api.resrobot.se/v2/trip?key=b58d2990-c70c-4042-884f-1b7919a0918f&lang=sv&date=" + searchDate + "&time=08:00&searchForArrival=1&originId=740045548&destId=740098559&format=json";
+
+        commute = await Http.GetJsonAsync<CommuteResponse>(endpointSL);
+        //var test = await Http.GetJsonAsync("https://bypasscors.herokuapp.com/api/?url=https://feeds.expressen.se/nyheter/");
+        //var newThing = test.Content.ToString();
+        //Console.WriteLine(newThing);
+        
+        foreach (var trip in commute.Trip.Take(5))
+        {
+            var workLeg = new FormattedLeg();
+            workLeg.Duration = trip.duration; // Convert.ToDateTime(trip.duration).ToString("HH:mm");
+            foreach (var leg in trip.LegList.Leg)
+            {
+                var workTrip = new FormattedTrip();
+                if (workLeg.StartTime == null)
+                {
+                    workLeg.StartTime = leg.Origin.time;
+                }
+                workLeg.EndTime = leg.Origin.time;
+
+                workTrip.Time = leg.Origin.time;
+                workTrip.Destination = leg.Destination.name;
+                workTrip.ArrivalTime = leg.Destination.time;
+                workTrip.Line = leg.Product.name;
+                if (leg.Product.catOutS == "BLT")
+                {
+                    workTrip.Icon = "bus icon";
+                }
+                else if (leg.Product.catOutS == "ULT")
+                {
+                    workTrip.Icon = "subway icon";
+                }
+
+                workLeg.Trips.Add(workTrip);
+            }
+            formattedTrips.Add(workLeg);
+        }
+    }
+}
+
